@@ -48,6 +48,47 @@ class LogProb(BaseModel):
     bytes: List[int] = Field(default_factory=list)
 
 
+class StopReason(str, Enum):
+    """Reason for stopping the generation."""
+
+    MAX_TOKENS = "max_tokens"
+    LENGTH = "length"
+    STOP_SEQUENCE = "stop_sequence"
+    END_OF_TEXT = "end_of_text"
+
+
+# ===== Common metadata =====
+
+
+class ResponseMeta(BaseModel):
+    """Response metadata."""
+
+    input_tokens: Optional[int] = Field(
+        default=None,
+        description="Number of tokens in the input prompt.",
+    )
+    output_tokens: Optional[int] = Field(
+        default=None,
+        description="Number of tokens in the output response.",
+    )
+    stop_reason: Optional[StopReason] = Field(
+        default=None,
+        description="Reason for stopping the generation.",
+    )
+    stop_sequence: Optional[str] = Field(
+        default=None,
+        description="Sequence that caused the generation to stop.",
+    )
+    delta: Optional[str] = Field(
+        default=None,
+        description="New text that just streamed in (only relevant when streaming).",
+    )
+    logprobs: Optional[List[List[LogProb]]] = Field(
+        default=None,
+        description="Log probabilities of tokens in the response.",
+    )
+
+
 # ===== Generic Model Output - Chat =====
 class ChatResponse(BaseModel):
     """Chat response."""
@@ -57,6 +98,8 @@ class ChatResponse(BaseModel):
     delta: Optional[str] = None
     logprobs: Optional[List[List[LogProb]]] = None
     additional_kwargs: dict = Field(default_factory=dict)
+
+    metadata: ResponseMeta = Field(default_factory=ResponseMeta)
 
     def __str__(self) -> str:
         return str(self.message)
@@ -78,6 +121,7 @@ class CompletionResponse(BaseModel):
             counts, function calling information).
         raw: Optional raw JSON that was parsed to populate text, if relevant.
         delta: New text that just streamed in (only relevant when streaming).
+        metadata: Response metadata.
     """
 
     text: str
@@ -85,6 +129,8 @@ class CompletionResponse(BaseModel):
     raw: Optional[dict] = None
     logprobs: Optional[List[List[LogProb]]] = None
     delta: Optional[str] = None
+
+    metadata: ResponseMeta = Field(default_factory=ResponseMeta)
 
     def __str__(self) -> str:
         return self.text
